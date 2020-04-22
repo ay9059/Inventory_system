@@ -1,0 +1,8 @@
+fulfillOrder Part 8                # cannot order a part
+fulfillOrder Abstract 5            # Abstract not in assembly inventory
+fulfillOrder Arduous 0             # order with zero quantity
+fulfillOrder Arduous -11           # order with negative quantity
+empty Part                         # cannot empty a part
+empty Alexa                        # Alexa not in assembly inventory
+bork                               # illegal command
+

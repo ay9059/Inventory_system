@@ -1,0 +1,3 @@
+addAssembly Appsdasd
+addAssembly App 3 
+
