@@ -12,45 +12,6 @@
 #include <stddef.h>
 #include "trimit.h"
 #include "inventory.h"
-/*
-struct part{
-   char id[12];
-   struct part * next;
-}
-
-struct item{
-   char id[12];  //max 11 plus null terminator
-   int quantity;
-   struct item * next;
-
-}
-
-struct items_needed{
-   struct item * items_list;
-   int item_count;
-
-}
-
-struct assembly{
-   char id[12];
-   int capacity;
-   int on_hand;
-   struct items_needed * items;
-   struct assembly * next;
-
-}
-
-struct inventory{
-   struct part * part_list;
-   int part_count;
-   struct assembly * assembly_list;
-   int assembly_count;
-
-
-
-
-}
-*/
 
 
 assembly_t * lookup_assembly(assembly_t * ap, char * id){
@@ -407,6 +368,90 @@ void empty(inventory_t * invp,char * id ){
    }
 }
 
+void stock (inventory_t * invp, char * id, int quantity){
+
+	printf("+ stock %s %d\n",id,quantity);
+	//make sure quantity is greater than zero
+	if(quantity<=0){
+	   fprintf(stderr,"!!! %d: illegal quantity for ID %s\n",quantity,id);
+	   return;
+	}
+	assembly_t * assembly = lookup_assembly(invp->assembly_list, id);
+	//make sure assembly is not null
+	if(assembly==NULL){
+	   fprintf(stderr,"!!! %s: Assembly ID is not in the inventory\n",id );
+	   return;
+	}
+        items_needed_t * parts = malloc(sizeof(items_needed_t));
+        int vacant = assembly->capacity - assembly->on_hand;
+         if(quantity>vacant){
+           quantity = vacant;
+         }
+
+
+	if(assembly!=NULL){
+	   if(assembly->capacity>0){	
+              make(invp, id, quantity, parts,1);
+	      assembly->on_hand = quantity;
+              print_items_needed(parts);
+	      free(parts);
+	   }
+	}else{
+	   fprintf(stderr,"!!! %s: assembly ID is not in inventory\n",id);
+	}
+
+
+}
+
+void fulfill_order(inventory_t * invp, assembly_t * assembly,char * xi , int ni){
+
+	   if(assembly==NULL){
+	      fprintf(stderr,"!!! %s: assembly ID is not in the inventory -- order cancelled\n",xi);
+	      return;
+	   }
+	   printf("+ fulfillOrder %s %d\n",xi,ni);
+	   if(ni<=0){
+	      fprintf(stderr,"!!! %d: illegal order quantity for ID %s -- order canceled\n",ni,xi); 
+	     return; 
+	   }
+           items_needed_t * items = malloc(sizeof(items_needed_t));
+	   
+	   while(1){
+	      add_item(items,xi,ni);
+	       xi = strtok(NULL," ");
+	       if(xi==NULL || xi[0]=='#'){
+	          break;
+	       }
+	       ni = strtol(strtok(NULL," "),NULL,10);
+	   }
+	   items_needed_t * parts = malloc(sizeof(items_needed_t));
+           item_t * iterator = items->item_list;
+	   while(iterator!=NULL){
+	      get(invp,iterator->id,iterator->quantity,parts,0 );
+	      iterator=iterator->next;
+	   }
+              free(items);
+              print_items_needed(parts);
+	      free(parts);
+
+
+}
+
+void print_help(){
+     printf("Requests:\n");
+     printf("    addPart\n");
+     printf("    addAssembly ID capacity [x1 n1 [x2 n2 ...]]\n");
+     printf("    fulfillOrder [x1 n1 [x2 n2 ...]]\n");
+     printf("    stock ID n\n");
+     printf("    restock [ID]\n");
+     printf("    empty ID\n");
+     printf("    inventory [ID]\n");
+     printf("    parts\n");
+     printf("    help\n");
+     printf("    clear\n");
+     printf("    quit\n");
+}
+
 void restock(inventory_t * invp, char * id){
    
    items_needed_t * parts = malloc(sizeof(items_needed_t));
@@ -513,81 +558,20 @@ void read_input(FILE *fp, inventory_t * invp) {
         exit(EXIT_SUCCESS);
      
      }else if (strcmp(token,"empty")==0){
-	printf("+ empty\n");
         char * id = strtok(NULL," ");
+	printf("+ empty %s\n",id);
 	empty(invp,id);
      }else if(strcmp(token,"help")==0){
-        printf("Requests:\n");
-	printf("    addPart\n");
-	printf("    addAssembly ID capacity [x1 n1 [x2 n2 ...]]\n");
-	printf("    fulfillOrder [x1 n1 [x2 n2 ...]]\n");
-	printf("    stock ID n\n");
-	printf("    restock [ID]\n");
-	printf("    empty ID\n");
-	printf("    inventory [ID]\n");
-	printf("    parts\n");
-	printf("    help\n");
-	printf("    clear\n");
-	printf("    quit\n");
-
+         print_help();
      }else if(strcmp(token,"stock")==0 ){
         char * id = strtok(NULL," ");
 	int quantity = strtol(strtok(NULL," "),NULL,10 );
-	printf("+ stock %s %d\n",id,quantity);
-	//make sure quantity is greater than zero
-	if(quantity<=0){
-	   fprintf(stderr,"!!! %d: illegal quantity for ID %s\n",quantity,id);
-	   return;
-	}
-	assembly_t * assembly = lookup_assembly(invp->assembly_list, id);
-	//make sure assembly is not null
-	if(assembly==NULL){
-	   fprintf(stderr,"!!! %s: Assembly ID is not in the inventory\n",id );
-	   return;
-	}
-        items_needed_t * parts = malloc(sizeof(items_needed_t));
-        int vacant = assembly->capacity - assembly->on_hand;
-         if(quantity>vacant){
-           quantity = vacant;
-         }
-
-	 if(quantity==0){
-	    return;
-	 }
-
-	if(assembly!=NULL){
-	   if(assembly->capacity>0){	
-              make(invp, id, quantity, parts,1);
-	      assembly->on_hand = quantity;
-              print_items_needed(parts);
-	      free(parts);
-	   }
-	}else{
-	   fprintf(stderr,"!!! %s: assembly ID is not in inventory\n",id);
-	}
+	stock(invp,id,quantity);
 	}else if(strcmp(token,"fulfillOrder")==0||strcmp(token,"fulfillorder")==0 ){
 	   char * xi = strtok(NULL," ");
+	   assembly_t* assembly = lookup_assembly(invp->assembly_list,xi);
 	   int  ni = strtol(strtok(NULL," "),NULL,10);
-	   printf("+ fulfillOrder %s %d\n",xi,ni);
-           items_needed_t * items = malloc(sizeof(items_needed_t));
-	   
-	   while(1){
-	      add_item(items,xi,ni);
-	       xi = strtok(NULL," ");
-	       if(xi==NULL || xi[0]=='#'){
-	          break;
-	       }
-	       ni = strtol(strtok(NULL," "),NULL,10);
-	   }
-	   items_needed_t * parts = malloc(sizeof(items_needed_t));
-           item_t * iterator = items->item_list;
-	   while(iterator!=NULL){
-	      get(invp,iterator->id,iterator->quantity,parts,0 );
-	      iterator=iterator->next;
-	   }
-              free(items);
-              print_items_needed(parts);
-	      free(parts);
+	   fulfill_order(invp,assembly,xi,ni);
 
      }else if(strcmp(token,"restock")==0 ){
       char * id = strtok(NULL," ");
@@ -602,7 +586,7 @@ void read_input(FILE *fp, inventory_t * invp) {
       }
       else if( id[0]=='A' || id[0]=='a'){
      }else{
-	     fprintf(stderr,"%s: restock ID must start with \'A\'",id);
+         fprintf(stderr,"%s: restock ID must start with \'A\'",id);
      }
      }
      else if(strcmp(token,"#")==0){
@@ -614,7 +598,8 @@ void read_input(FILE *fp, inventory_t * invp) {
 	 }
      }
      else{
-       fprintf(stderr,"!!! Invalid request\n");
+       printf("+ %s\n",token);
+       fprintf(stderr,"!!! %s: unknown command\n",token );
      }
 }
 }
