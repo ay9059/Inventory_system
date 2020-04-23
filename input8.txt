@@ -1,0 +1,10 @@
+addPart P1
+addPart P0
+addPart P3
+addAssembly AA 10 P1 5 P0 3 P1 8 # P1 appears twice -- combine the quantities
+
+ addAssembly AB 10 P1 5 P0 3 P1 8 # P1 appears twice -- combine the quantities
+
+addAssembly AD 10 P1 5 P0 3 P0 3 # P1 appears twice -- combine the quantities
+inventory AA
+clear

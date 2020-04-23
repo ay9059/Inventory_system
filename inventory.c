@@ -13,7 +13,12 @@
 #include "trimit.h"
 #include "inventory.h"
 
-
+//lookup_assembly searches for an assembly with the specified id
+//and returns a pointer to that assemly if it exists otherwise
+//it returns a NULL pointer.
+//@param (assembly_t *) ap: a linked list of assemblies
+//@param (char *) id: the name of the assembly to lookup
+//@return: an assembly_t pointer if it exists
 assembly_t * lookup_assembly(assembly_t * ap, char * id){
   assembly_t * iterator = ap;
    while(iterator!=NULL){
@@ -30,6 +35,12 @@ assembly_t * lookup_assembly(assembly_t * ap, char * id){
 
 }
 
+//lookup_part searches for a part with the specified id
+//and returns a pointer to that part if it exists otherwise
+//it returns a NULL pointer.
+//@param (part_t *) pp: a linked list of parts
+//@param (char *) id: the name of the part to lookup
+//@return: a part_t pointer if it exists
 part_t * lookup_part(part_t * pp, char * id){
    part_t * iterator = pp;
    while(iterator!=NULL){
@@ -47,6 +58,12 @@ part_t * lookup_part(part_t * pp, char * id){
 
 
 
+//lookup_part searches for an item with the specified id
+//and returns a pointer to that item if it exists otherwise
+//it returns a NULL pointer.
+//@param (item_t *) ip: a linked list of items
+//@param (char *) id: the name of the item to lookup
+//@return: an item_t pointer if it exists
 item_t * item_lookup(item_t * ip, char * id){
   item_t * iterator = ip;
    while(iterator!=NULL){
@@ -97,6 +114,8 @@ void add_part(inventory_t * p,char * id){
 	 }
 	 else if(already==1){
             fprintf(stderr,"!!! %s: duplicate part ID\n",id );
+
+            free(new_part);
          }
       }
    }else if((int) strlen(id)>11){
@@ -104,10 +123,22 @@ void add_part(inventory_t * p,char * id){
    }   
    else {
       fprintf(stderr, "!!! %s: part ID, must start with \'P\' \n",id );
+
     }
    }
 
 
+
+//Add item is the function which is responsible for adding a single item in the
+//items_needed list. It adds the item at the end of the items_needed list.
+//This function also conducts the necessary error checkings for instance, the 
+//max length, the first letter if its capital A and if the assembly already
+//exists.
+//@param (inventory_t *) invp: pointer to inventory.
+//@param (char *) id: the id of the new assembly
+//@param (int) quantity: the quantity of new item
+//@param (items_needed_t): a pointer to items_needed which is allocated in
+//                         read_input()
 void add_item(items_needed_t * items, char * id, int quantity){
   item_t * item = item_lookup(items->item_list,id);
   if(item!=NULL){
@@ -129,20 +160,29 @@ void add_item(items_needed_t * items, char * id, int quantity){
 	   iterator = iterator->next;
 	}
      }
-  }
+
+   }
 }
 
 
+
+//Add items needed is the function which is responsible for adding items in the
+//required items list for a given assembly. It adds the item at the end of the list
+//This function also conducts the necessary error checkings for instance, the 
+//max length, and if the assembly already exists or not.
+//
+//@param (inventory_t *) invp: pointer to inventory.
+//@param (char *) id: the id of the new assembly
+//@param (int) quantity: the quantity of the item
+//@param (items_needed_t): a pointer to an items needed allocated in read_input
 void add_items_needed(inventory_t * invp, items_needed_t * needed, char * id, int quantity){
-   part_t * part_needed = malloc(sizeof(part_t));
-   assembly_t * assembly_needed = malloc(sizeof(assembly_t));
-   item_t * need = needed->item_list;
+   item_t * need = needed->item_list; // reference to the linked list 
    item_t* new = malloc(sizeof(item_t));
-   strcpy(new->id,id);
+   strcpy(new->id,id);  //since new is an array
    new->quantity = quantity;
    if(needed!=NULL && quantity>0){
-       part_needed = lookup_part(invp->part_list,id);
-       assembly_needed = lookup_assembly(invp->assembly_list,id);
+      part_t * part_needed = lookup_part(invp->part_list,id);
+     assembly_t *  assembly_needed = lookup_assembly(invp->assembly_list,id);
        if(part_needed!=NULL || assembly_needed!=NULL ){
 	 if(need==NULL){
             needed->item_count++;
@@ -151,6 +191,7 @@ void add_items_needed(inventory_t * invp, items_needed_t * needed, char * id, in
 	    while(1){
 	       item_t * item_look = item_lookup(need,id);
 		if(item_look!=NULL){
+		   free(new);
 		   item_look->quantity = item_look->quantity + quantity;
 		   return;
 		}
@@ -162,10 +203,10 @@ void add_items_needed(inventory_t * invp, items_needed_t * needed, char * id, in
 	    }
 	 }	 
 	 }else{
-
 	   fprintf(stderr,"!!! %s: part/assembly ID is not in inventory\n",id ); 
 	 }
       }else if(quantity<=0){
+              free(new);
 	      if(id[0]=='P'){
          fprintf(stderr,"!!! %d: illegal quantity for part ID %s \n",quantity,id);
       }else if(id[0]=='A'){
@@ -179,7 +220,15 @@ void add_items_needed(inventory_t * invp, items_needed_t * needed, char * id, in
 }
 
 
-
+//Add assembly is the function which is responsible for adding an assembly in the
+//assembly list. It adds the assembly at the end of the assembly_list.
+//This function also conducts the necessary error checkings for instance, the 
+//max length, the first letter if its capital A and if the assembly already
+//exists.
+//@param (inventory_t *) invp: pointer to inventory.
+//@param (char *) id: the id of the new assembly
+//@param (int) capacity: the capacity of new assembly
+//@param (items_needed_t)
 void add_assembly(inventory_t * invp, char * id, int capacity, items_needed_t * items){
    if(( id[0]=='A' || id[0]=='a') && capacity>=0 && (int) strlen(id) <=11 ){
       assembly_t * new_assembly = malloc(sizeof(assembly_t));
@@ -209,6 +258,7 @@ void add_assembly(inventory_t * invp, char * id, int capacity, items_needed_t * 
             invp->assembly_count++;
         }else{
             fprintf(stderr,"!!! %s: duplicate assembly ID\n",id);
+	    free(new_assembly);
         
          }
      }
@@ -225,6 +275,28 @@ else{
 }
 
 
+//This function frees the item_t structs which are present
+//in items_needed_t. After it is done freeing all the items,
+//it frees items_needed_t struct which is passed as a parameter.
+//@param (items_needed_t *) items: a reference to items_needed_t
+//which contains linked list of item_t structs.
+void free_items_needed(items_needed_t * items){
+   
+ 
+   item_t* n = items->item_list;
+   while(n){
+      item_t * new = n;
+      n=n->next;
+      free(new);
+   }
+
+}
+
+
+//Free inventory frees the assembly list, part list and the
+//inventory itself.
+//@param (inventory_t *) invp: a pointer to inventory which
+//is allocated in the main function.
 void free_inventory(inventory_t * invp){
    //free the parts from the inventory
    part_t * n = invp->part_list;
@@ -235,11 +307,23 @@ void free_inventory(inventory_t * invp){
    }
    //free assemblies
    assembly_t * a = invp->assembly_list;
+
    while(a){
+
       assembly_t * b = a;
+      item_t * items = b->items->item_list;
+      while(items){
+
+        item_t * other = items;
+	items = items->next;
+        free(other);	
+      }
+     
+      free(b->items);
       a=a->next;
       free(b);
    }
+
   //finally, free the inventory itself
   free(invp);
 
@@ -247,6 +331,13 @@ void free_inventory(inventory_t * invp){
 }
 
 
+//Make function is used to manufacture assembly and parts of id specified in the parameter.
+//If there is the required amount of assemblies, it makes a call to get instead. 
+//function which retrieves the remaining amount of assemblies and the parts
+//recursively.
+//@param (char *) id: The id of assembly to be retrieved
+//@param (int) n:the quantity of  assembly
+//@param (items_needed_t *) parts: a reference to the parts list for the assembly
 void make(inventory_t * invp, char * id,int n,items_needed_t * parts,int update){
    if(n<=0){
 	   return;
@@ -263,7 +354,7 @@ void make(inventory_t * invp, char * id,int n,items_needed_t * parts,int update)
       if(item_pointer!=NULL){
        while(1){
        if(item_pointer->id[0]=='P' ){
-          add_item(parts,item_pointer->id ,item_pointer->quantity*n);
+          add_item(parts,item_pointer->id ,item_pointer->quantity*n); //create new item if its a part
        }else{
            get(invp,item_pointer->id,item_pointer->quantity*n,parts, update );
        }
@@ -276,6 +367,13 @@ void make(inventory_t * invp, char * id,int n,items_needed_t * parts,int update)
    }
 
 
+//Get function is used to retrieve assembly of id specified in the parameter.
+//If there isn't the required amount of assemblies, it makes a call to make
+//function which manufactures the remaining amount of assemblies and the parts
+//recursively.
+//@param (char *) id: The id of assembly to be retrieved
+//@param (int) n:the quantity of  assembly
+//@param (items_needed_t *) parts: a reference to the parts list for the assembly
 //note to self: refactor code in make and return error if assembly_object is NULL
 void get(inventory_t * invp, char * id, int n, items_needed_t * parts,int update ){
    if (n<=0){
@@ -294,7 +392,9 @@ void get(inventory_t * invp, char * id, int n, items_needed_t * parts,int update
    }
 
 
-
+//Prints out the parts inventory from the main inventory
+//which is passed in as a parameter
+//@param (inventory_t *) invp: a pointer to inventory
 void print_parts(inventory_t * invp){
    printf("Part inventory:\n");
    printf("---------------\n");
@@ -313,7 +413,10 @@ void print_parts(inventory_t * invp){
   }
 }
 
-
+//This function prints out the items needed which is passed in
+//as a parameter to the function. This function also uses foramtted
+//printing method for alignment
+//@param (items_needed_t *) items: a pointer to items_needed_t
 void print_items_needed(items_needed_t * items){
    item_t * iterator = items->item_list ;
 
@@ -326,41 +429,54 @@ void print_items_needed(items_needed_t * items){
       while(1){
          printf("%-12s ",iterator->id);
 	 printf("%7d\n",iterator->quantity);
+	 
 	 iterator = iterator->next;
 	 if(iterator==NULL){
 	    break;
 	 }
       
       }
-
   }
 }
+  
 
+
+//Prints the contents of inventory's assembly and also frees the items_neeeded struct
+//afterwards
+//@param (inventory_t *) invp: the main inventory used to access the assemblies
+//
 void print_inventory(inventory_t * invp){
    printf("Assembly inventory:\n");
    printf("-------------------\n");
+
    if(invp->assembly_list!=NULL){
    printf("Assembly ID Capacity On Hand\n");
    printf("=========== ======== =======\n");
-   assembly_t * assembly_iterator = invp->assembly_list;
-      while(assembly_iterator!=NULL){
-         printf("%-12s",assembly_iterator->id);
-         printf(" %7d    ",assembly_iterator->capacity);
-         if(assembly_iterator->on_hand<assembly_iterator->capacity/2){
-            printf("%3d*\n",assembly_iterator->on_hand);
+   assembly_t ** assembly_iterator = to_assembly_array(invp->assembly_count,invp->assembly_list);
+      int count = 0;
+      while(count!=invp->assembly_count ){
+         printf("%-12s",assembly_iterator[count]->id);
+         printf(" %7d    ",assembly_iterator[count]->capacity);
+
+	 //if on_hand value is less than half the capacity , add an asterisk
+         if(assembly_iterator[count]->on_hand<assembly_iterator[count]->capacity/2){
+            printf("%3d*\n",assembly_iterator[count]->on_hand);
          }else{
-            printf("%3d\n",assembly_iterator->on_hand);
+            printf("%3d\n",assembly_iterator[count]->on_hand);
          }
-         assembly_iterator = assembly_iterator->next;
-   
+         count++;
    }
+      free(assembly_iterator);
    }else{
    
       printf("EMPTY INVENTORY\n");
    }
 }
 
-
+//Empties the assembly of the provided id
+//@param (inventory_t *) invp: the main inventory used to access the assemblies and
+//                             parts
+//@param (char *) id: the id of assembly that is to be emptied
 void empty(inventory_t * invp,char * id ){
    assembly_t * assembly = lookup_assembly(invp->assembly_list,id);
    if(assembly!=NULL){
@@ -368,6 +484,17 @@ void empty(inventory_t * invp,char * id ){
    }
 }
 
+//stock is called in read_input and stocks the number of quatites that
+//the user provides for an existing assembly. This function also constructs the items
+//needed list and prints them out at the end of the stock request. This function
+//does error checking accordingly. If the stock quantity exceeds the capacity,
+//the quantity will be set to the assembly's maximum capacity instead. If the capacity
+//is 0, The assembly cannot be stocked.
+//
+//@param (inventory_t *) invp: the main inventory usedc to access the assemblies and
+//                             parts
+//@param (char *) id: the id of assembly that is to be stocked
+//@param (int) quantity: number of units to be stocked.
 void stock (inventory_t * invp, char * id, int quantity){
 
 	printf("+ stock %s %d\n",id,quantity);
@@ -395,14 +522,22 @@ void stock (inventory_t * invp, char * id, int quantity){
 	      assembly->on_hand = quantity;
               print_items_needed(parts);
 	      free(parts);
+	      
 	   }
 	}else{
 	   fprintf(stderr,"!!! %s: assembly ID is not in inventory\n",id);
 	}
-
-
 }
 
+
+//fulfill_order is called in read_input and fulfills the number of orders that
+//the user makes for an existing assembly. This function also constructs the items
+//needed list and prints them out at the end of the request fulfillmen. This function
+//does error checking accordingly.
+//
+//@param (inventory_t *) invp: the main inventory usedc to access the assemblies and
+//                             parts
+//@param (assembly_t *) assembly:
 void fulfill_order(inventory_t * invp, assembly_t * assembly,char * xi , int ni){
 
 	   if(assembly==NULL){
@@ -422,7 +557,6 @@ void fulfill_order(inventory_t * invp, assembly_t * assembly,char * xi , int ni)
 	       if(xi==NULL || xi[0]=='#'){
 	          break;
 	       }
-	       ni = strtol(strtok(NULL," "),NULL,10);
 	   }
 	   items_needed_t * parts = malloc(sizeof(items_needed_t));
            item_t * iterator = items->item_list;
@@ -430,13 +564,20 @@ void fulfill_order(inventory_t * invp, assembly_t * assembly,char * xi , int ni)
 	      get(invp,iterator->id,iterator->quantity,parts,0 );
 	      iterator=iterator->next;
 	   }
+
+              free_items_needed(items);
               free(items);
+
               print_items_needed(parts);
+
+              free_items_needed(parts);
 	      free(parts);
-
-
 }
 
+//This function prints out the list of available commands to stdin
+//and takes in no parameter.
+//
+//It is only called in read_input()
 void print_help(){
      printf("Requests:\n");
      printf("    addPart\n");
@@ -452,6 +593,13 @@ void print_help(){
      printf("    quit\n");
 }
 
+//This function implements the restock request of the program, it has
+//two arguments inventory_t * invp and char *id. ID can be null or an
+//ID to an existing assembly. If it is not an ID to an existing assembly
+//error is reported
+//
+//@param (inventory_t *) invp: the main inventory
+//@param (char *) id: The id of the assembly that is to be restocked.
 void restock(inventory_t * invp, char * id){
    
    items_needed_t * parts = malloc(sizeof(items_needed_t));
@@ -479,6 +627,7 @@ void restock(inventory_t * invp, char * id){
    }else if(id!=NULL){
        assembly_t * assembly = lookup_assembly(invp->assembly_list,id);
        if(assembly==NULL){
+
           fprintf(stderr,"!!! %s: does not exist in assembly inventory\n",id );
 	  return;
        }
@@ -489,15 +638,21 @@ void restock(inventory_t * invp, char * id){
 	      assembly->on_hand = assembly->capacity;
 	   }
    
-   free(parts);
 }
+//free the item_list and then items_needed_t
+free_items_needed(parts);
+free(parts);
 }
 
+//This is the main loop of the program which handles all the requests of the program
+//It also takes care of error checking and handles whitespaces
+//@param (FILE *) fp: a file pointer from which the input is taken
+//@param (inventory_t *) invp: a pointer to the main inventory which is allocated in
+//                             main
+//return: void
 void read_input(FILE *fp, inventory_t * invp) {
-    char buf[120];
+    char buf[120]=" ";
     while(fgets(buf,120,fp)){
-     strcpy(buf,trim(buf));
-
      char *token = strtok(trim(buf)," ");
      if(token==NULL){
         continue;
@@ -510,15 +665,13 @@ void read_input(FILE *fp, inventory_t * invp) {
      printf("+ addPart %s\n",second);
      add_part(invp, second);			     
      }
-     
      else if(strcmp(token,"addAssembly")==0) {
          char * id = strtok(NULL," ");
          char * capacity_i =  strtok(NULL, " ");
 	 int capacity_c = strtol(capacity_i,NULL,10);
-
-         items_needed_t * items_needed = malloc(sizeof(items_needed));
+         items_needed_t * items_needed = malloc(sizeof(items_needed_t));
+	 items_needed->item_list=NULL;
          printf("+ addAssembly %s %d",id,capacity_c);
-	 
 	 //check if the assembly has items needed entered.
 	 while(1){
 	   char * first = strtok(NULL, " ");
@@ -527,8 +680,6 @@ void read_input(FILE *fp, inventory_t * invp) {
 	      printf(" %s %s",first,second); 
 	   }
 	   if(first!=NULL && strcmp(first,"#")!=0 ){
-
-	   //   add_item(items_needed,first,strtol(second,NULL,10));
 	      add_items_needed(invp, items_needed, first,strtol(second,NULL,10) );
 	   }
 	   else{
@@ -542,12 +693,14 @@ void read_input(FILE *fp, inventory_t * invp) {
         print_parts(invp);
      
      }else if(strcmp(token,"inventory")==0){
-	printf("+ inventory\n");
+	printf("+ inventory");
         char * id = strtok(NULL," ");
-        if(id==NULL || id[0]=='#' ){  
+        if(id==NULL || id[0]=='#' ){ 
+	        printf("\n");	
 	    	print_inventory(invp);	
         }
 	else{
+	    printf(" %s\n",id);
             assembly_t * assembly = lookup_assembly(invp->assembly_list,id);
             printf("Assembly ID:  %s\n",assembly->id);
             printf("bin capacity: %d\n",assembly->capacity);
@@ -596,25 +749,37 @@ void read_input(FILE *fp, inventory_t * invp) {
 	     break;
 	  }
 	 }
+     }else if(strcmp(token,"clear")==0){
+	printf("+ clear\n");
+        free_inventory(invp);
      }
      else{
        printf("+ %s\n",token);
        fprintf(stderr,"!!! %s: unknown command\n",token );
      }
-}
+   }
 }
 
+//The main function of the program where the inventory is initialized and read
+//input is also called
+//@param (int) argc: the argument count
+//@param (char *) argv[]: an array of arguments
+//@return: an integer specifying sucessfull execution of the program
 int main(int argc, char * argv[]){
-    inventory_t * invp = malloc(sizeof(inventory_t));
-    
+    inventory_t * inventory = calloc(1, sizeof(inventory_t));
+    inventory->assembly_list=NULL;
+    inventory->part_list=NULL;
+    inventory->assembly_count=0;
+    inventory->part_count=0;
     if(argc==1 ){
-        FILE * fp = stdin;
-	read_input(fp,invp );
+       FILE * fp = stdin;
+       read_input(fp,inventory );
 			  
     }else if(argc==2){
-      FILE * fp = fopen(argv[1], "r" );
-      read_input(fp, invp);
-    }  
+        FILE * fp = fopen(argv[1], "r" );
+        read_input(fp, inventory);
+    }
 
+    free(inventory);
     return 1;
 }

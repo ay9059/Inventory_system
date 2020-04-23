@@ -1,0 +1,7 @@
+addAssembly Argument 20
+addAssembly Ambivalent 10
+addAssembly Azure 30
+inventory
+parts
+clear
+
