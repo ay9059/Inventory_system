@@ -1,12 +1,7 @@
-# only Assemblies
-addAssembly Argument 20
-addAssembly Ambivalent 10
-addAssembly Azure 31
-stock Azure 50
-inventory
-empty Azure
-stock Azure 15
-inventory
+addPart P1
+addPart P3
+addPart P2
+addAssembly Ay 3 P2 2 P1 2
 restock
-inventory
-clear
+parts
+

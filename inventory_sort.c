@@ -32,23 +32,39 @@ int item_compare(const void * first, const void * second){
 }
 
 part_t ** to_part_array(int count, part_t * part_list){
-   part_t ** part_array = malloc(sizeof(part_t *));
+   part_t ** part_array = malloc(sizeof(part_t *)*count);
    int counter = 0;
    while(counter!=count){
-      part_array[count]=part_list;
+      part_array[counter]=part_list;
       part_list = part_list->next; 
       counter++;
    }
-
+   qsort(part_array, count, sizeof(part_t *), part_compare);
    return part_array;      
 
 }
 
 
 
+item_t ** to_item_array(int count, item_t * item_list){
+    item_t ** item_array = calloc(count,sizeof(item_t *));
+    int counter=0;
+   while(counter!=count){
+      item_array[counter]=item_list;
+      item_list = item_list->next; 
+      counter++;
+   }
+   
+   qsort(item_array, count, sizeof(item_t *), item_compare);
+   counter = counter+count;
+   return item_array;      
+
+}
+
+//Allocates space for an assembly_t pointer array and populates it fields
+//and later calls sort on it.
 assembly_t ** to_assembly_array(int count, assembly_t * assembly_list){
    assembly_t ** assembly_array = calloc(count, sizeof(assembly_t *));
-
    int counter = 0;
    while(assembly_list!=NULL){
       assembly_array[counter]=assembly_list;

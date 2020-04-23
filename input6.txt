@@ -1,12 +1,12 @@
 # only Assemblies
 addAssembly Argument 20
 addAssembly Ambivalent 10
-addAssembly Azure 31
-stock Azure 50
+ addAssembly Azure 31
+ stock Azure 50
 inventory
-empty Azure
+ empty Azure
 stock Azure 15
-inventory
+ inventory
 restock
 inventory
 clear

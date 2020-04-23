@@ -144,7 +144,7 @@ void add_item(items_needed_t * items, char * id, int quantity){
   if(item!=NULL){
      item->quantity =item->quantity+ quantity;
   }else{
-     items->item_count++;
+     items->item_count=items->item_count+1;
      item_t * new_item = malloc(sizeof(item_t));
      strcpy(new_item->id,id);
      new_item->quantity=quantity;
@@ -281,8 +281,6 @@ else{
 //@param (items_needed_t *) items: a reference to items_needed_t
 //which contains linked list of item_t structs.
 void free_items_needed(items_needed_t * items){
-   
- 
    item_t* n = items->item_list;
    while(n){
       item_t * new = n;
@@ -342,7 +340,7 @@ void make(inventory_t * invp, char * id,int n,items_needed_t * parts,int update)
    if(n<=0){
 	   return;
    }
-    if(id[0]!='A'&&id[0]!='a'){
+    if(id[0]!='A'){
        fprintf(stderr,"!!! %s must be the ID of an assembly\n",id);
     }
     assembly_t * assembly_object = lookup_assembly(invp->assembly_list,id);
@@ -401,13 +399,14 @@ void print_parts(inventory_t * invp){
    if(invp->part_list!=NULL){
       printf("Part ID\n");
       printf("===========\n");
-      part_t * part_iterator = invp->part_list;
+      part_t ** part_iterator = to_part_array(invp->part_count,invp->part_list);
       int count = 0;
-      while(part_iterator!=NULL){
-         printf("%s\n",part_iterator->id);
-         part_iterator= part_iterator->next; 
+      while(count!=invp->part_count){
+         printf("%s\n",part_iterator[count]->id);
          count++;
       }
+
+     free(part_iterator);
   }else{
     printf("NO PARTS\n");
   }
@@ -419,24 +418,23 @@ void print_parts(inventory_t * invp){
 //@param (items_needed_t *) items: a pointer to items_needed_t
 void print_items_needed(items_needed_t * items){
    item_t * iterator = items->item_list ;
-
+   item_t ** item_array = to_item_array(items->item_count,items->item_list);
+   int counter=0;
    if(iterator!=NULL){
       printf("Parts list:\n");
       printf("-----------\n");
       printf("Part ID     quantity\n");
       printf("=========== ========\n");
 
-      while(1){
-         printf("%-12s ",iterator->id);
-	 printf("%7d\n",iterator->quantity);
+      while(counter!=items->item_count){
+         printf("%-12s ",item_array[counter]->id);
+	 printf("%7d\n",item_array[counter]->quantity);
 	 
-	 iterator = iterator->next;
-	 if(iterator==NULL){
-	    break;
-	 }
+         counter++;
       
       }
   }
+   free(item_array);
 }
   
 
@@ -510,6 +508,7 @@ void stock (inventory_t * invp, char * id, int quantity){
 	   return;
 	}
         items_needed_t * parts = malloc(sizeof(items_needed_t));
+	parts->item_count=0;
         int vacant = assembly->capacity - assembly->on_hand;
          if(quantity>vacant){
            quantity = vacant;
@@ -564,12 +563,10 @@ void fulfill_order(inventory_t * invp, assembly_t * assembly,char * xi , int ni)
 	      get(invp,iterator->id,iterator->quantity,parts,0 );
 	      iterator=iterator->next;
 	   }
-
+              //free the heaps and their items, iteratively.
               free_items_needed(items);
               free(items);
-
               print_items_needed(parts);
-
               free_items_needed(parts);
 	      free(parts);
 }
@@ -603,6 +600,7 @@ void print_help(){
 void restock(inventory_t * invp, char * id){
    
    items_needed_t * parts = malloc(sizeof(items_needed_t));
+   parts->item_count=0;
    int count = invp->assembly_count;
    if(id==NULL){
         while(count!=0){
@@ -610,6 +608,7 @@ void restock(inventory_t * invp, char * id){
 	for(int i=1;i<count;i++){
 	   assembly = assembly->next;
 	}
+
         int amount = assembly->capacity;
 	if(assembly!=NULL){
 	   if(2*assembly->on_hand < amount){
@@ -622,8 +621,9 @@ void restock(inventory_t * invp, char * id){
 		break;
 	   }
              count--;
-	}
+	}     
               print_items_needed(parts);
+
    }else if(id!=NULL){
        assembly_t * assembly = lookup_assembly(invp->assembly_list,id);
        if(assembly==NULL){
@@ -640,8 +640,9 @@ void restock(inventory_t * invp, char * id){
    
 }
 //free the item_list and then items_needed_t
-free_items_needed(parts);
 free(parts);
+
+free_items_needed(parts);
 }
 
 //This is the main loop of the program which handles all the requests of the program
